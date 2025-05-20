@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explicit Quasi-static FEA Checker</title>
+    <!-- Enlazaremos style.css más adelante -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Incluiremos Plotly más adelante si lo usamos -->
+</head>
+<body>
+    <header>
+        <!-- Podríamos poner el logo de Cabka aquí -->
+        <h1>Explicit Quasi-static FEA Checker</h1>
+    </header>
+
+    <main>
+        <section id="input-section">
+            <h2>Cargar Archivos CSV</h2>
+            <form id="upload-form">
+                <div>
+                    <label for="allke_csv">ALLKE CSV:</label>
+                    <input type="file" id="allke_csv" name="allke_csv" accept=".csv" required>
+                </div>
+                <div>
+                    <label for="allie_csv">ALLIE CSV:</label>
+                    <input type="file" id="allie_csv" name="allie_csv" accept=".csv" required>
+                </div>
+                <div>
+                    <label for="allwk_csv">ALLWK CSV:</label>
+                    <input type="file" id="allwk_csv" name="allwk_csv" accept=".csv" required>
+                </div>
+                <button type="submit" id="check-button">Check</button>
+            </form>
+        </section>
+
+        <section id="results-section" style="display: none;"> <!-- Oculta por defecto -->
+            <h2>Resultados del Análisis</h2>
+            
+            <div id="graph-controls-container">
+                <div id="graph-buttons">
+                    <button class="graph-btn" data-series="ALLKE">Kinetic Energy</button>
+                    <button class="graph-btn" data-series="ALLIE">Strain Energy</button>
+                    <button class="graph-btn active" data-series="RI">RI</button> <!-- Activo por defecto -->
+                    <button class="graph-btn" data-series="ALLWK">External Work</button>
+                    <button class="graph-btn" data-series="RET">RET</button>
+                </div>
+                <div id="plotly-graph">
+                    <!-- La gráfica de Plotly se insertará aquí -->
+                </div>
+            </div>
+
+            <div id="summary-container">
+                <div id="summary-table-container">
+                    <h3>Tiempos Clave</h3>
+                    <table id="summary-table">
+                        <thead>
+                            <tr>
+                                <th>Parámetro</th>
+                                <th>Valor (s o %)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Las filas se añadirán dinámicamente con JS -->
+                            <tr><td>time_RI_estable_<_5%</td><td data-key="time_RI_estable_menor_5pct">N/A</td></tr>
+                            <tr><td>time_RI_estable_<_1%</td><td data-key="time_RI_estable_menor_1pct">N/A</td></tr>
+                            <tr><td>time_RET_>=_1%</td><td data-key="time_RET_mayor_igual_1pct">N/A</td></tr>
+                            <tr><td>time_RET_>=_5%</td><td data-key="time_RET_mayor_igual_5pct">N/A</td></tr>
+                            <tr><td>% tiempo estable RI<5%</td><td data-key="porcentaje_tiempo_estable_RI_5pct">N/A</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="final-decision-container">
+                    <h3>Decisión Final</h3>
+                    <p id="final-decision-text">Esperando análisis...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2023 Tu Nombre/Compañía - Adaptado de Cabka</p>
+    </footer>
+
+    <!-- Enlazaremos script.js más adelante -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
