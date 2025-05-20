@@ -1,0 +1,287 @@
+/* static/css/style.css */
+
+/* --- Variables de Color y Reset Básico --- */
+:root {
+    --cabka-blue: #0055A4;
+    --cabka-pink-accent: #E6007E; /* Para el botón "Check" y elementos activos */
+    --light-gray-bg: #F8F9FA; /* Un gris muy claro para fondos de sección */
+    --medium-gray-border: #DEE2E6;
+    --dark-gray-text: #343A40;
+    --white: #FFFFFF;
+    --text-color: #212529;
+    --success-bg: #D4EDDA; /* Para el mensaje "PERFECTO" */
+    --success-text: #155724;
+    --info-bg: #D1ECF1;    /* Para "MUY BIENO" y "BIEN" */
+    --info-text: #0C5460;
+    --warning-bg: #FFF3CD; /* Para "ACEPTABLE" */
+    --warning-text: #856404;
+    --danger-bg: #F8D7DA;  /* Para "NO ACEPTABLE" / Errores */
+    --danger-text: #721C24;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--white); /* Fondo general blanco */
+    margin: 0;
+    padding: 20px; /* Añade un poco de espacio alrededor */
+}
+
+/* --- Contenedor Principal para Centrar y Limitar Ancho --- */
+.container {
+    max-width: 960px; /* Ancho máximo de la app */
+    margin: 30px auto; /* Centrar en la página */
+    padding: 20px;
+    background-color: var(--white);
+    border-radius: 8px;
+    /* box-shadow: 0 0 15px rgba(0, 0, 0, 0.1); */ /* Sombra sutil opcional */
+}
+
+
+/* --- Encabezado --- */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--medium-gray-border);
+}
+
+header h1 {
+    color: var(--cabka-blue);
+    font-size: 2em; /* Más grande */
+}
+
+/* --- Secciones Principales --- */
+section {
+    background-color: var(--light-gray-bg); /* Fondo gris claro para las secciones */
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 8px;
+    border: 1px solid var(--medium-gray-border);
+}
+
+section h2 {
+    color: var(--cabka-blue);
+    margin-bottom: 20px;
+    font-size: 1.5em;
+}
+
+/* --- Formulario de Carga --- */
+#upload-form div {
+    margin-bottom: 15px;
+}
+
+#upload-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--dark-gray-text);
+}
+
+#upload-form input[type="file"] {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--medium-gray-border);
+    border-radius: 4px;
+    background-color: var(--white);
+}
+
+#check-button {
+    display: inline-block;
+    background-color: var(--cabka-pink-accent);
+    color: var(--white);
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+#check-button:hover {
+    background-color: #c30069; /* Un tono más oscuro del rosa/rojo */
+}
+
+/* --- Sección de Resultados --- */
+#results-section h2 {
+    margin-bottom: 20px;
+}
+
+/* Contenedor para controles de gráfica y gráfica */
+#graph-controls-container {
+    display: flex; /* Para poner botones y gráfica lado a lado en pantallas grandes */
+    flex-wrap: wrap; /* Para que se apilen en pantallas pequeñas */
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+#graph-buttons {
+    display: flex;
+    flex-direction: column; /* Botones en columna */
+    gap: 10px;
+    min-width: 180px; /* Ancho mínimo para los botones */
+}
+
+.graph-btn {
+    padding: 10px 15px;
+    background-color: var(--white);
+    color: var(--cabka-blue);
+    border: 1px solid var(--cabka-blue);
+    border-radius: 20px; /* Estilo píldora */
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-weight: 500;
+}
+
+.graph-btn:hover {
+    background-color: #e0eaff; /* Un azul muy claro al pasar el ratón */
+}
+
+.graph-btn.active {
+    background-color: var(--cabka-blue);
+    color: var(--white);
+    font-weight: bold;
+}
+
+#plotly-graph {
+    flex-grow: 1; /* La gráfica ocupa el espacio restante */
+    min-height: 350px; /* Altura mínima para la gráfica */
+    border: 1px solid var(--medium-gray-border);
+    background-color: var(--white); /* Fondo blanco para la gráfica */
+    border-radius: 4px;
+}
+
+/* Contenedor para tabla resumen y decisión final */
+#summary-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+#summary-table-container,
+#final-decision-container {
+    flex: 1; /* Ambos ocupan espacio similar */
+    min-width: 280px; /* Ancho mínimo antes de apilarse */
+    background-color: var(--white);
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid var(--medium-gray-border);
+}
+
+#summary-container h3, #results-section h3 { /* Unificado el estilo de H3 */
+    color: var(--cabka-blue);
+    margin-bottom: 15px;
+    font-size: 1.2em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+/* Tabla Resumen */
+#summary-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#summary-table th,
+#summary-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--medium-gray-border);
+}
+
+#summary-table th {
+    background-color: #e9ecef; /* Un gris un poco más oscuro para cabeceras de tabla */
+    font-weight: bold;
+}
+
+#summary-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Decisión Final */
+#final-decision-text {
+    font-size: 1.1em;
+    padding: 15px;
+    border-radius: 4px;
+    font-weight: 500;
+    /* Los colores de fondo y texto se aplicarán con JS según el resultado */
+}
+
+/* Clases para los diferentes tipos de mensajes de decisión */
+.decision-perfect { background-color: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-text); }
+.decision-very-good { background-color: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-text); }
+.decision-good { background-color: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-text); } /* Mismo que very-good o un tono diferente */
+.decision-acceptable { background-color: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-text); }
+.decision-rescale { background-color: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-text); }
+.decision-pending { background-color: #e9ecef; color: var(--dark-gray-text); border: 1px solid var(--medium-gray-border); } /* Para el estado inicial */
+
+
+/* --- Pie de Página --- */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--medium-gray-border);
+    font-size: 0.9em;
+    color: #6c757d; /* Un gris más suave para el pie de página */
+}
+
+
+/* --- Media Queries para Responsividad --- */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.8em;
+    }
+    section h2 {
+        font-size: 1.3em;
+    }
+    /* Apilar botones de gráfica y gráfica verticalmente */
+    #graph-controls-container {
+        flex-direction: column;
+    }
+    #graph-buttons {
+        flex-direction: row; /* Botones en fila en pantallas pequeñas */
+        flex-wrap: wrap; /* Permitir que los botones se envuelvan si no caben */
+        justify-content: center; /* Centrar los botones */
+        min-width: auto; /* Permitir que se encojan */
+    }
+    .graph-btn {
+        flex-grow: 1; /* Para que ocupen el ancho disponible si son pocos */
+        min-width: 120px; /* Ancho mínimo para cada botón */
+    }
+
+    /* Apilar tabla y decisión final verticalmente */
+    #summary-container {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px; /* Menos padding en pantallas muy pequeñas */
+    }
+    .container {
+        padding: 15px;
+    }
+    header h1 {
+        font-size: 1.5em;
+    }
+    #check-button {
+        font-size: 1em;
+        padding: 10px 20px;
+    }
+    .graph-btn {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+}
