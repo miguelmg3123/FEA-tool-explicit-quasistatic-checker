@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Botones de la gráfica
     const graphButtons = document.querySelectorAll('.graph-btn');
+    let currentGraphData = null; // <--- AÑADE ESTA LÍNEA AQUÍ
 
     // --- MANEJO DEL FORMULARIO DE CARGA ---
     if (uploadForm) {
@@ -78,12 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             button.classList.add('active');
             
             const seriesName = button.dataset.series;
-            // Aquí llamaremos a la función que actualiza la gráfica de Plotly
-            console.log(`Se debe mostrar la serie: ${seriesName}`);
-            // Por ahora, solo un placeholder en la gráfica
-            if (plotlyGraphDiv) {
-                plotlyGraphDiv.innerHTML = `<p style="text-align:center; padding-top:50px; color: #777;">Gráfica para ${seriesName} aparecerá aquí.</p>`;
-            }
+            renderPlotlyGraph(seriesName); // Llamar a la función para actualizar la gráfica con la nueva serie
         });
     });
 
@@ -103,12 +99,14 @@ document.addEventListener('DOMContentLoaded', () => {
             clearSummaryTable(); // Limpiar si no hay datos de tabla
         }
 
-        // 3. Actualizar gráfica (esto se hará más adelante con Plotly)
+
+        // 3. Actualizar gráfica
         if (plotlyGraphDiv && data.graph_data) {
-            // Ejemplo: renderPlotlyGraph(data.graph_data, graphButtons.find(btn => btn.classList.contains('active')).dataset.series);
-            const activeSeries = document.querySelector('.graph-btn.active')?.dataset.series || 'RI';
-            plotlyGraphDiv.innerHTML = `<p style="text-align:center; padding-top:50px; color: #777;">Datos recibidos. Gráfica para ${activeSeries} se mostrará aquí.</p>`;
+            currentGraphData = data.graph_data; // Guardar los datos completos
+            const activeSeries = document.querySelector('.graph-btn.active')?.dataset.series || 'RI'; // Obtener la serie activa
+            renderPlotlyGraph(activeSeries); // Renderizar la gráfica inicial con la serie activa
         } else if (plotlyGraphDiv) {
+            currentGraphData = null; // No hay datos, limpiar
             plotlyGraphDiv.innerHTML = '<p style="text-align:center; padding-top:50px; color: #777;">No hay datos para la gráfica.</p>';
         }
     }
@@ -150,6 +148,63 @@ document.addEventListener('DOMContentLoaded', () => {
             finalDecisionText.classList.add('decision-pending'); // Default o si no coincide
         }
     }
+
+
+    // Nueva función para renderizar la gráfica con Plotly
+    function renderPlotlyGraph(activeSeriesName) {
+        if (!plotlyGraphDiv || !currentGraphData || !currentGraphData[activeSeriesName]) {
+            plotlyGraphDiv.innerHTML = '<p style="text-align:center; padding-top:50px; color: #777;">Datos no disponibles para esta serie.</p>';
+            return;
+        }
+
+        const series = currentGraphData[activeSeriesName];
+        
+        // Verificar que series.x y series.y existen y son arrays
+        if (!series || !Array.isArray(series.x) || !Array.isArray(series.y)) {
+            plotlyGraphDiv.innerHTML = '<p style="text-align:center; padding-top:50px; color: #777;">Formato de datos incorrecto para la gráfica.</p>';
+            console.error("Datos incorrectos para Plotly:", series);
+            return;
+        }
+
+        const trace = {
+            x: series.x,
+            y: series.y,
+            mode: 'lines',
+            type: 'scatter',
+            name: activeSeriesName
+        };
+
+        const layout = {
+            title: `Gráfica de ${activeSeriesName}`,
+            xaxis: {
+                title: 'Tiempo (s)'
+            },
+            yaxis: {
+                title: getAxisTitle(activeSeriesName),
+                // Considera type: 'log' para energías si los rangos son muy amplios
+                // type: (activeSeriesName.includes('ALLKE') || activeSeriesName.includes('ALLIE')) ? 'log' : 'linear',
+                // autorange: true // Asegura que el rango se ajuste bien, especialmente para log
+            },
+            margin: { l: 70, r: 30, b: 50, t: 50 }, // Ajustar márgenes (aumenté 'l' para el título del eje Y)
+            autosize: true
+        };
+        
+        // Usar Plotly.react para eficiencia en actualizaciones
+        Plotly.react(plotlyGraphDiv, [trace], layout, {responsive: true});
+    }
+
+    // Nueva función para obtener el título del eje Y
+    function getAxisTitle(seriesName) {
+        if (seriesName.includes('RI') || seriesName.includes('RET')) {
+            return 'Ratio (%)';
+        }
+        if (seriesName.includes('ALLKE') || seriesName.includes('ALLIE') || seriesName.includes('ALLWK')) {
+            return 'Energía (J)'; // O la unidad que corresponda desde tu CSV
+        }
+        return 'Valor';
+    }
+
+
     
     // Inicializar el texto de decisión con la clase correcta
     if(finalDecisionText) {

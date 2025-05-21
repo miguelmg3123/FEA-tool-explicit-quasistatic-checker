@@ -81,30 +81,66 @@ def analyze_data():
         
         # Intentar detectar si hay cabecera o no por el tipo de la primera fila, primera columna
         # Esto es una heurística, puede no ser perfecto
-        def read_csv_with_optional_header(file_stream, value_col_name):
-            file_content = file_stream.read().decode('utf-8')
-            try:
-                # Intentar leer con cabecera
-                df = pd.read_csv(io.StringIO(file_content))
-                # Verificar si la primera columna parece tiempo (numérica)
-                if not pd.api.types.is_numeric_dtype(df.iloc[:, 0]):
-                    # Si no es numérica, probablemente no había cabecera real o es un formato extraño
-                    # Reintentar sin cabecera y asignando nombres
-                    df = pd.read_csv(io.StringIO(file_content), names=[COL_TIME, value_col_name], header=None, skiprows=0) #skiprows para evitar conflictos si hay comentarios
-                else:
-                    # Si es numérica, asumir que la cabecera era correcta, renombrar columnas
-                    df.columns = [COL_TIME, value_col_name]
+        # En app.py, reemplazar la función read_csv_with_optional_header con esta:
+def read_csv_with_optional_header(file_stream, value_col_name):
+    # Leer todo el contenido del stream como bytes
+    file_content_bytes = file_stream.read()
+    try:
+        # Intentar decodificar como utf-8-sig para manejar BOM automáticamente
+        file_content = file_content_bytes.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        # Fallback a utf-8 si utf-8-sig falla (ej. si no hay BOM o es otra codificación compatible con utf-8)
+        file_content = file_content_bytes.decode('utf-8', errors='replace') # errors='replace' para evitar fallos por caracteres extraños
 
-            except pd.errors.ParserError: # Si falla la lectura normal (ej. no hay cabecera y da error de columnas)
-                 df = pd.read_csv(io.StringIO(file_content), names=[COL_TIME, value_col_name], header=None, skiprows=0)
-            except Exception: # Otro error, intentar sin cabecera
-                 df = pd.read_csv(io.StringIO(file_content), names=[COL_TIME, value_col_name], header=None, skiprows=0)
-            
-            # Asegurarse que la columna de tiempo es numérica
-            df[COL_TIME] = pd.to_numeric(df[COL_TIME], errors='coerce')
-            df[value_col_name] = pd.to_numeric(df[value_col_name], errors='coerce')
-            df.dropna(inplace=True) # Eliminar filas donde la conversión falló
-            return df.sort_values(by=COL_TIME).reset_index(drop=True)
+    s_io = io.StringIO(file_content)
+    
+    # Leer la primera línea para inspección, luego resetear el stream para Pandas
+    first_line_peek = s_io.readline().strip()
+    s_io.seek(0) # Resetear para que Pandas pueda leer desde el inicio
+
+    is_likely_text_header = False
+    if first_line_peek:
+        try:
+            # Intentar convertir los dos primeros campos (separados por coma) a float.
+            # Si esto falla, es probable que sea una cabecera de texto.
+            fields = first_line_peek.split(',')
+            if len(fields) >= 2:
+                float(fields[0]) # Intenta convertir el primer campo (tiempo)
+                # Para el segundo campo, tomar solo la parte antes de un posible ';'
+                second_field_data_part = fields[1].split(';')[0]
+                float(second_field_data_part) # Intenta convertir el segundo campo (valor)
+            else:
+                # No hay suficientes campos para ser datos típicos, asumir cabecera
+                is_likely_text_header = True
+        except ValueError:
+            # La conversión a float falló, es una cabecera de texto
+            is_likely_text_header = True
+        except IndexError:
+            # No hay suficientes campos (ej. línea vacía o solo un campo)
+            is_likely_text_header = True # O podría ser un error de formato, pero tratémoslo como posible cabecera
+
+    if is_likely_text_header:
+        # La primera línea es una cabecera de texto.
+        # Leemos usando header=0 para que Pandas la use, pero solo tomamos las 2 primeras columnas
+        # y luego les asignamos nuestros nombres estandarizados.
+        df = pd.read_csv(s_io, sep=',', header=0, usecols=[0, 1], names=[COL_TIME, value_col_name],
+                         on_bad_lines='skip') # Opcional: 'skip' para ignorar líneas malformadas
+    else:
+        # La primera línea son datos (o el archivo está vacío/formato inesperado).
+        # Leemos sin cabecera desde el principio y asignamos nombres.
+        df = pd.read_csv(s_io, sep=',', header=None, names=[COL_TIME, value_col_name],
+                         on_bad_lines='skip')
+
+    # Asegurarse de que las columnas de tiempo y valor sean numéricas
+    df[COL_TIME] = pd.to_numeric(df[COL_TIME], errors='coerce')
+    df[value_col_name] = pd.to_numeric(df[value_col_name], errors='coerce')
+    
+    # Eliminar filas donde la conversión a numérico falló para las columnas esenciales
+    # o si alguna de estas columnas cruciales es NaN por otra razón (ej. línea vacía parseada).
+    df.dropna(subset=[COL_TIME, value_col_name], inplace=True)
+    
+    # Ordenar por tiempo y resetear el índice
+    return df.sort_values(by=COL_TIME).reset_index(drop=True)
 
 
         df_allke = read_csv_with_optional_header(file_allke.stream, 'ALLKE')
