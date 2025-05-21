@@ -401,12 +401,25 @@ def analyze_data():
             final_decision_text = "CÁLCULO NO ENTRA EN RÉGIMEN CUASI-ESTÁTICO NUNCA (RI siempre >= 5% o no se pudo determinar). REESCALAR TIEMPO Y MASA."
 
         # --- 5. Preparar Datos para la Respuesta JSON ---
+        # En app.py, dentro de la función analyze_data, reemplaza format_series_for_json
+
         def format_series_for_json(df, time_col, value_col):
             if df.empty or value_col not in df.columns:
                 return {'x': [], 'y': []}
+            
+            x_values = df[time_col].tolist() # La columna de tiempo no debería tener NaN después del dropna inicial
+            
+            y_values_processed = []
+            for item in df[value_col].tolist(): # Convertir la serie a una lista de Python
+                # Comprobar explícitamente si el item es un NaN flotante
+                if isinstance(item, float) and np.isnan(item):
+                    y_values_processed.append(None) # Convertir NaN a None de Python
+                else:
+                    y_values_processed.append(item)
+            
             return {
-                'x': df[time_col].tolist(),
-                'y': df[value_col].where(pd.notna(df[value_col]), None).tolist()
+                'x': x_values,
+                'y': y_values_processed
             }
 
         graph_data = {
@@ -417,11 +430,19 @@ def analyze_data():
             'RET': format_series_for_json(df_allwk, COL_TIME, 'RET'),
         }
 
+        # Dentro de la función analyze_data, modifica estas dos funciones:
+
         def format_time_value(time_val):
-            return f"{time_val:.3f} s" if time_val is not None and time_val != np.inf else "N/A"
-        
+            # Manejar None, np.inf y np.nan explícitamente
+            if time_val is None or time_val == np.inf or (isinstance(time_val, float) and np.isnan(time_val)):
+                return "N/A"
+            return f"{time_val:.3f} s"
+
         def format_percentage_value(perc_val):
-             return f"{perc_val:.2f}%" if perc_val is not None else "N/A"
+            # Manejar None y np.nan explícitamente
+            if perc_val is None or (isinstance(perc_val, float) and np.isnan(perc_val)):
+                return "N/A"
+            return f"{perc_val:.2f}%"
 
         summary_table_data = {
             "time_RI_estable_menor_5pct": format_time_value(time_RI_estable_menor_5pct),
@@ -430,6 +451,12 @@ def analyze_data():
             "time_RET_mayor_igual_5pct": format_time_value(time_RET_mayor_igual_5pct),
             "porcentaje_tiempo_estable_RI_5pct": format_percentage_value(porcentaje_tiempo_estable_RI_5pct_val if time_RI_estable_menor_5pct is not None else None),
         }
+
+        print("--- summary_table_data ANTES de jsonify ---")
+        print(summary_table_data)
+        print("--- graph_data (solo claves y tipos de 'y' para brevedad) ---")
+        for key, series_data in graph_data.items():
+            print(f"{key}: y type is {type(series_data['y'][0]) if series_data['y'] else 'empty'}")
 
         return jsonify({
             "message": "Análisis completado.",
