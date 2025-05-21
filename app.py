@@ -15,7 +15,221 @@ COL_VALUE = 'Value' # O el nombre que uses, ej: 'ALLKE', 'ALLIE', 'ALLWK'
 
 # --- Funciones Auxiliares ---
 
+# En app.py, reemplazar la función read_csv_with_optional_header con esta:
+
+# En app.py, dentro de la función read_csv_with_optional_header
+
+# En app.py, reemplazar la función read_csv_with_optional_header con esta:
+
 def read_csv_with_optional_header(file_stream, value_col_name):
+    print(f"\n--- Procesando archivo para: {value_col_name} ---")
+    file_content_bytes = file_stream.read()
+    try:
+        file_content = file_content_bytes.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        file_content = file_content_bytes.decode('utf-8', errors='replace')
+
+    s_io_for_peek = io.StringIO(file_content)
+    first_line_peek = s_io_for_peek.readline().strip()
+    print(f"Primera línea detectada para heurística: '{first_line_peek}'")
+
+    df = pd.DataFrame() # Inicializar df vacío
+    
+    # Intentar con separador ';' primero
+    possible_separators = [';', ',']
+    
+    for sep_char in possible_separators:
+        print(f"Intentando con separador: '{sep_char}'")
+        s_io_for_pandas = io.StringIO(file_content) # Necesitamos un nuevo stream para cada intento de read_csv
+        
+        is_likely_text_header = False
+        if first_line_peek:
+            try:
+                fields = first_line_peek.split(sep_char)
+                if len(fields) >= 2:
+                    float(fields[0]) 
+                    # Para el segundo campo, tomar solo la parte antes de un posible ';' o ',' si es cabecera con descripción
+                    # Esto es complicado porque el separador de descripción podría ser el mismo que el de datos
+                    # Por simplicidad, si la conversión a float falla, es cabecera.
+                    second_field_value_part = fields[1].split(';')[0].split(',')[0] # Tomar la parte numérica antes de cualquier descripción
+                    float(second_field_value_part)
+                else:
+                    print(f"Heurística (sep='{sep_char}'): No hay suf. campos, asumiendo cabecera.")
+                    is_likely_text_header = True
+            except (ValueError, IndexError):
+                print(f"Heurística (sep='{sep_char}'): Error convirtiendo primera línea, asumiendo cabecera.")
+                is_likely_text_header = True
+        
+        print(f"Resultado heurística (sep='{sep_char}'): is_likely_text_header = {is_likely_text_header}")
+
+        current_df = pd.DataFrame()
+        try:
+            if is_likely_text_header:
+                print(f"Leyendo CSV con header=0, sep='{sep_char}'")
+                current_df = pd.read_csv(s_io_for_pandas, sep=sep_char, header=0, usecols=[0, 1], 
+                                         names=[COL_TIME, value_col_name], on_bad_lines='skip', engine='python')
+            else:
+                print(f"Leyendo CSV con header=None, sep='{sep_char}'")
+                current_df = pd.read_csv(s_io_for_pandas, sep=sep_char, header=None, 
+                                         names=[COL_TIME, value_col_name], on_bad_lines='skip', engine='python')
+            
+            # Verificar si el DataFrame tiene las columnas esperadas y no está completamente vacío
+            if not current_df.empty and COL_TIME in current_df.columns and value_col_name in current_df.columns:
+                # Intentar conversión a numérico
+                temp_time_col = pd.to_numeric(current_df[COL_TIME], errors='coerce')
+                temp_value_col = pd.to_numeric(current_df[value_col_name], errors='coerce')
+                
+                # Si la mayoría de los valores se pudieron convertir, este es probablemente el separador correcto
+                if temp_time_col.notna().sum() > (len(current_df) / 2) and \
+                   temp_value_col.notna().sum() > (len(current_df) / 2) and \
+                   temp_time_col.notna().sum() > 0 : # Asegurarse que al menos una fila es válida
+                    print(f"Separador '{sep_char}' parece correcto.")
+                    df = current_df.copy() # Usar este df
+                    # Aplicar las conversiones finales
+                    df[COL_TIME] = temp_time_col
+                    df[value_col_name] = temp_value_col
+                    break # Salir del bucle de separadores
+            print(f"DataFrame DESPUÉS de pd.read_csv (sep='{sep_char}'):\n{current_df.head()}")
+
+        except Exception as e:
+            print(f"Error en pd.read_csv (sep='{sep_char}'): {e}")
+            continue # Probar con el siguiente separador
+
+    if df.empty:
+        print("No se pudo parsear el CSV con los separadores probados o resultó vacío.")
+        return pd.DataFrame(columns=[COL_TIME, value_col_name]) # Devolver DF vacío estructurado
+
+    print(f"DataFrame ANTES de dropna (primeras 5 filas):\n{df.head()}")
+    print(f"Tipos de datos ANTES de dropna:\n{df.dtypes}")
+    print(f"Número de NaNs en COL_TIME: {df[COL_TIME].isna().sum()}")
+    print(f"Número de NaNs en {value_col_name}: {df[value_col_name].isna().sum()}")
+
+    df.dropna(subset=[COL_TIME, value_col_name], inplace=True)
+    print(f"DataFrame DESPUÉS de dropna (primeras 5 filas):\n{df.head()}")
+    print(f"Tamaño del DataFrame final: {df.shape}")
+    
+    if df.empty: # Comprobación adicional por si dropna lo vació todo
+        print("DataFrame vacío después de dropna.")
+        return pd.DataFrame(columns=[COL_TIME, value_col_name])
+
+    return df.sort_values(by=COL_TIME).reset_index(drop=True)
+    print(f"\n--- Procesando archivo para: {value_col_name} ---") # NUEVO PRINT
+    file_content_bytes = file_stream.read()
+    try:
+        file_content = file_content_bytes.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        file_content = file_content_bytes.decode('utf-8', errors='replace')
+
+    s_io = io.StringIO(file_content)
+    
+    # NUEVO: Imprimir las primeras líneas del contenido del archivo tal como lo ve Python
+    print("Primeras ~500 caracteres del archivo:")
+    s_io.seek(0) # Asegurarse de estar al inicio para leer
+    print(s_io.read(500))
+    s_io.seek(0) # Resetear para la lógica de detección de cabecera
+
+    first_line_peek = s_io.readline().strip()
+    s_io.seek(0) 
+    print(f"Primera línea detectada para heurística: '{first_line_peek}'") # NUEVO PRINT
+
+    is_likely_text_header = False
+    if first_line_peek:
+        try:
+            fields = first_line_peek.split(';')
+            if len(fields) >= 2:
+                float(fields[0]) 
+                second_field_data_part = fields[1] 
+                float(second_field_data_part) 
+            else:
+                print("Heurística: No hay suficientes campos en la primera línea, asumiendo cabecera.") # NUEVO PRINT
+                is_likely_text_header = True
+        except ValueError:
+            print("Heurística: ValueError al convertir primera línea a float, asumiendo cabecera.") # NUEVO PRINT
+            is_likely_text_header = True
+        except IndexError:
+            print("Heurística: IndexError en primera línea, asumiendo cabecera.") # NUEVO PRINT
+            is_likely_text_header = True 
+    
+    print(f"Resultado de heurística de cabecera: is_likely_text_header = {is_likely_text_header}") # NUEVO PRINT
+
+    df = pd.DataFrame() # Inicializar df vacío
+    if is_likely_text_header:
+        print("Intentando leer CSV con header=0, sep=';'") # NUEVO PRINT
+        try:
+            df = pd.read_csv(s_io, sep=';', header=0, usecols=[0, 1], names=[COL_TIME, value_col_name],
+                             on_bad_lines='skip')
+        except Exception as e:
+            print(f"Error en pd.read_csv (con header): {e}") # NUEVO PRINT
+    else:
+        print("Intentando leer CSV con header=None, sep=';'") # NUEVO PRINT
+        try:
+            df = pd.read_csv(s_io, sep=';', header=None, names=[COL_TIME, value_col_name],
+                             on_bad_lines='skip')
+        except Exception as e:
+            print(f"Error en pd.read_csv (sin header): {e}") # NUEVO PRINT
+
+    print(f"DataFrame DESPUÉS de pd.read_csv (primeras 5 filas):\n{df.head()}") # NUEVO PRINT
+    print(f"Tipos de datos DESPUÉS de pd.read_csv:\n{df.dtypes}") # NUEVO PRINT
+
+    df[COL_TIME] = pd.to_numeric(df[COL_TIME], errors='coerce')
+    df[value_col_name] = pd.to_numeric(df[value_col_name], errors='coerce')
+    
+    print(f"DataFrame DESPUÉS de to_numeric (primeras 5 filas):\n{df.head()}") # NUEVO PRINT
+    print(f"Tipos de datos DESPUÉS de to_numeric:\n{df.dtypes}") # NUEVO PRINT
+    print(f"Número de NaNs en COL_TIME: {df[COL_TIME].isna().sum()}") # NUEVO PRINT
+    print(f"Número de NaNs en {value_col_name}: {df[value_col_name].isna().sum()}") # NUEVO PRINT
+
+    df.dropna(subset=[COL_TIME, value_col_name], inplace=True)
+    print(f"DataFrame DESPUÉS de dropna (primeras 5 filas):\n{df.head()}") # NUEVO PRINT
+    print(f"Tamaño del DataFrame final: {df.shape}") # NUEVO PRINT
+    
+    return df.sort_values(by=COL_TIME).reset_index(drop=True)
+    # Leer todo el contenido del stream como bytes
+    file_content_bytes = file_stream.read()
+    try:
+        # Intentar decodificar como utf-8-sig (maneja BOM si está) o utf-8
+        file_content = file_content_bytes.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        file_content = file_content_bytes.decode('utf-8', errors='replace')
+
+    s_io = io.StringIO(file_content)
+    
+    first_line_peek = s_io.readline().strip()
+    s_io.seek(0) 
+
+    is_likely_text_header = False
+    if first_line_peek:
+        try:
+            # Intentar convertir los dos primeros campos (separados por punto y coma) a float.
+            fields = first_line_peek.split(';') # <--- CAMBIO AQUÍ: separador ;
+            if len(fields) >= 2:
+                float(fields[0]) 
+                # Para el segundo campo, tomar solo la parte antes de un posible ';' adicional (si lo hubiera en la cabecera)
+                # Aunque en este formato parece que el segundo campo de la cabecera es solo "Energy(J)"
+                second_field_data_part = fields[1] # Asumimos que el segundo campo es directo
+                float(second_field_data_part) 
+            else:
+                is_likely_text_header = True
+        except ValueError:
+            is_likely_text_header = True
+        except IndexError:
+            is_likely_text_header = True 
+
+    if is_likely_text_header:
+        # El separador es ';'
+        df = pd.read_csv(s_io, sep=';', header=0, usecols=[0, 1], names=[COL_TIME, value_col_name],
+                         on_bad_lines='skip') # <--- CAMBIO AQUÍ: sep=';'
+    else:
+        # El separador es ';'
+        df = pd.read_csv(s_io, sep=';', header=None, names=[COL_TIME, value_col_name],
+                         on_bad_lines='skip') # <--- CAMBIO AQUÍ: sep=';'
+
+    df[COL_TIME] = pd.to_numeric(df[COL_TIME], errors='coerce')
+    df[value_col_name] = pd.to_numeric(df[value_col_name], errors='coerce')
+    
+    df.dropna(subset=[COL_TIME, value_col_name], inplace=True)
+    
+    return df.sort_values(by=COL_TIME).reset_index(drop=True)
     # Leer todo el contenido del stream como bytes
     file_content_bytes = file_stream.read()
     try:
