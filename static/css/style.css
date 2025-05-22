@@ -2,8 +2,8 @@
 
 /* --- Variables de Color y Reset Básico --- */
 :root {
-    --cabka-blue: #0055A4;
-    --cabka-pink-accent: #E6007E; /* Para el botón "Check" y elementos activos */
+    --cabka-blue: #22187c;
+    --cabka-pink-accent: #F44862; /* Para el botón "Check" y elementos activos */
     --light-gray-bg: #F8F9FA; /* Un gris muy claro para fondos de sección */
     --medium-gray-border: #DEE2E6;
     --dark-gray-text: #343A40;
